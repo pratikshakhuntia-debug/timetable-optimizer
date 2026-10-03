@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button, Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Chip, Box } from '@mui/material'
 import ReportProblemIcon from '@mui/icons-material/ReportProblem'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 function ClashDetector() {
   const [checked, setChecked] = useState(false)
@@ -11,7 +12,7 @@ function ClashDetector() {
   const checkClashes = async () => {
     setError('')
     try {
-      const res = await axios.get('http://localhost:5000/api/schedule')
+      const res = await axios.get(`${API_URL}/api/schedule`)
       if (res.data.length === 0) {
         setError('No schedule generated yet. Go to Schedule Generator first.')
         return

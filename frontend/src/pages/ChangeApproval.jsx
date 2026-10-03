@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { TextField, Button, Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Chip, Box } from '@mui/material'
 import RuleIcon from '@mui/icons-material/Rule'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 function ChangeApproval() {
   const [requestText, setRequestText] = useState('')
@@ -9,13 +10,13 @@ function ChangeApproval() {
   const [requests, setRequests] = useState([])
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/change-requests').then(res => setRequests(res.data))
+axios.get(`${API_URL}/api/change-requests`).then(res => setRequests(res.data))
   }, [])
 
   const addRequest = async () => {
     if (!requestText || !requestedBy) { alert('Fill all fields'); return }
     try {
-      const res = await axios.post('http://localhost:5000/api/change-requests', { requestedBy, text: requestText })
+     const res = await axios.post(`${API_URL}/api/change-requests`, { requestedBy, text: requestText })
       setRequests([...requests, res.data])
       setRequestText('')
       setRequestedBy('')
@@ -26,7 +27,7 @@ function ChangeApproval() {
 
   const updateStatus = async (id, newStatus) => {
     try {
-      await axios.patch(`http://localhost:5000/api/change-requests/${id}`, { status: newStatus })
+     await axios.patch(`${API_URL}/api/change-requests/${id}`, { status: newStatus })
       setRequests(requests.map(r => r.id === id ? { ...r, status: newStatus } : r))
     } catch (error) {
       alert('Failed to update status. Is the backend running?')

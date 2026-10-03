@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { TextField, Button, MenuItem, Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Box } from '@mui/material'
 import EditNoteIcon from '@mui/icons-material/EditNote'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -19,7 +20,7 @@ function ConstraintEntry() {
       return
     }
     try {
-      const response = await axios.post('http://localhost:5000/api/constraints', {
+      const response = await axios.post(`${API_URL}/api/constraints`, {
         course, faculty, room, day, timeSlot
       })
       setEntries([...entries, response.data])

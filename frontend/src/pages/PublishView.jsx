@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, Chip, Box } from '@mui/material'
 import PublicIcon from '@mui/icons-material/Public'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 function PublishView() {
   const [finalSchedule, setFinalSchedule] = useState([])
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/schedule').then(res => setFinalSchedule(res.data))
+   axios.get(`${API_URL}/api/schedule`).then(res => setFinalSchedule(res.data))
   }, [])
 
   return (

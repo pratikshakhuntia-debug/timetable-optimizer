@@ -1,0 +1,1 @@
+export const API_URL = 'https://timetable-optimizer-production.up.railway.app'

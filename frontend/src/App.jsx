@@ -13,6 +13,7 @@ import PublicIcon from '@mui/icons-material/Public'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { API_URL } from './config'
 
 import Home from './pages/Home'
 import ConstraintEntry from './pages/ConstraintEntry'
@@ -94,7 +95,7 @@ function App() {
 const [avatarAnchor, setAvatarAnchor] = useState(null)
 const [clashDetails, setClashDetails] = useState([])
 useEffect(() => {
-  axios.get('http://localhost:5000/api/clash-details').then(res => setClashDetails(res.data))
+  axios.get(`${API_URL}/api/clash-details`).then(res => setClashDetails(res.data))
 }, [])
 const [searchQuery, setSearchQuery] = useState('')
 
@@ -102,16 +103,18 @@ const [allData, setAllData] = useState({ constraints: [], faculty: [], rooms: []
 const [searchAnchor, setSearchAnchor] = useState(null)
 
 const handleSearchFocus = (e) => {
+  const handleSearchFocus = (e) => {
   setSearchAnchor(e.currentTarget)
-  axios.get('http://localhost:5000/api/constraints').then(res =>
+  axios.get(`${API_URL}/api/constraints`).then(res =>
     setAllData(prev => ({ ...prev, constraints: res.data }))
   )
-  axios.get('http://localhost:5000/api/faculty').then(res =>
+  axios.get(`${API_URL}/api/faculty`).then(res =>
     setAllData(prev => ({ ...prev, faculty: res.data }))
   )
-  axios.get('http://localhost:5000/api/rooms').then(res =>
+  axios.get(`${API_URL}/api/rooms`).then(res =>
     setAllData(prev => ({ ...prev, rooms: res.data }))
   )
+}
 }
 
 const getSearchResults = () => {

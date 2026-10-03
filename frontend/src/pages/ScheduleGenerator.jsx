@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button, Paper, Typography, Table, TableBody, TableCell, TableHead, TableRow, CircularProgress, Box, Chip, Grid, Snackbar, Alert } from '@mui/material'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 function ScheduleGenerator() {
   const [loading, setLoading] = useState(false)
@@ -13,7 +14,7 @@ function ScheduleGenerator() {
     setLoading(true)
     setError('')
     try {
-      const res = await axios.post('http://localhost:5000/api/generate-schedule')
+      const res = await axios.post(`${API_URL}/api/generate-schedule`)
       setResult(res.data)
       if (res.data.baseline.clashCount > 0) {
   setShowClashAlert(true)

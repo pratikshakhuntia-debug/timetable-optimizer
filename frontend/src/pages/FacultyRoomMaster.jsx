@@ -6,6 +6,7 @@ import GroupIcon from '@mui/icons-material/Group'
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom'
 import PersonIcon from '@mui/icons-material/Person'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 function StatBox({ label, value }) {
   return (
@@ -28,14 +29,14 @@ function FacultyRoomMaster() {
   const [roomList, setRoomList] = useState([])
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/faculty').then(res => setFacultyList(res.data))
-    axios.get('http://localhost:5000/api/rooms').then(res => setRoomList(res.data))
+    axios.get(`${API_URL}/api/faculty`).then(res => setFacultyList(res.data))
+axios.get(`${API_URL}/api/rooms`).then(res => setRoomList(res.data))
   }, [])
 
   const addFaculty = async () => {
     if (!facultyName || !availability) { alert('Fill all fields'); return }
     try {
-      const res = await axios.post('http://localhost:5000/api/faculty', { facultyName, availability })
+      const res = await axios.post('http://localhost:5000/api/rooms', { roomNumber, capacity })
       setFacultyList([...facultyList, res.data])
       setFacultyName('')
       setAvailability('')
@@ -47,7 +48,7 @@ function FacultyRoomMaster() {
   const addRoom = async () => {
     if (!roomNumber || !capacity) { alert('Fill all fields'); return }
     try {
-      const res = await axios.post('http://localhost:5000/api/rooms', { roomNumber, capacity })
+     const res = await axios.patch(`http://localhost:5000/api/rooms/${room.id}`, { active: !(room.active !== false) })
       setRoomList([...roomList, res.data])
       setRoomNumber('')
       setCapacity('')
@@ -58,7 +59,7 @@ function FacultyRoomMaster() {
 
   const toggleRoomActive = async (room) => {
     try {
-      const res = await axios.patch(`http://localhost:5000/api/rooms/${room.id}`, { active: !(room.active !== false) })
+      const res = await axios.patch(`${API_URL}/api/rooms/${room.id}`, { active: !(room.active !== false) })
       setRoomList(roomList.map(r => r.id === room.id ? res.data : r))
     } catch (error) {
       alert('Failed to update room. Is the backend running?')
