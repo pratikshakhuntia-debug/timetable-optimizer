@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
+
 import {
   AppBar,
   Toolbar,
@@ -282,7 +283,7 @@ function SidebarContent({ role, clashCount }) {
 
 function App() {
   const [role, setRole] = useState('Coordinator')
-
+  const navigate = useNavigate()
   const [anchorEl, setAnchorEl] = useState(null)
   const [avatarAnchor, setAvatarAnchor] = useState(null)
 
@@ -394,11 +395,17 @@ const handleRoleChange = (newRole) => {
   setRole(newRole)
   setSearchQuery('')
   setSearchAnchor(null)
+
+  if (newRole === 'Coordinator') {
+    navigate('/coordinator')
+  } else if (newRole === 'Faculty') {
+    navigate('/faculty')
+  } else {
+    navigate('/student')
+  }
 }
   return (
-    <BrowserRouter>
-      <Box sx={{ display: 'flex' }}>
-
+  <Box sx={{ display: 'flex' }}>
         {/* ---------------- TOP BAR ---------------- */}
 
         <AppBar
@@ -933,9 +940,16 @@ const handleRoleChange = (newRole) => {
 
           </Routes>
         </Box>
-      </Box>
+        </Box>
+)
+}
+
+function AppWithRouter() {
+  return (
+    <BrowserRouter>
+      <App />
     </BrowserRouter>
   )
 }
 
-export default App
+export default AppWithRouter
