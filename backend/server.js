@@ -211,47 +211,246 @@ app.patch('/api/rooms/:id', async (req, res) => {
   }
 })
 // ---------- Change Requests ----------
+
 app.get('/api/change-requests', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM change_requests')
-    const formatted = rows.map(r => ({ id: r.id, requestedBy: r.requested_by, text: r.text, status: r.status }))
+
+    const formatted = rows.map(r => ({
+      id: r.id,
+      requestedBy: r.requested_by,
+      text: r.text,
+      status: r.status,
+      course: r.course,
+      newDay: r.new_day,
+      newTimeSlot: r.new_time_slot
+    }))
+
     res.json(formatted)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
+
 app.post('/api/change-requests', async (req, res) => {
-  const { requestedBy, text } = req.body
-  if (!requestedBy || !text) {
-    return res.status(400).json({ error: 'All fields are required' })
+  const {
+    requestedBy,
+    course,
+    newDay,
+    newTimeSlot
+  } = req.body
+
+  if (!requestedBy || !course || !newDay || !newTimeSlot) {
+    return res.status(400).json({
+      error: 'Requested By, Course, New Day and New Time Slot are required'
+    })
   }
+
   try {
+    const text = `Request to move ${course} to ${newDay}, ${newTimeSlot}`
+
     const [result] = await db.query(
-      'INSERT INTO change_requests (requested_by, text, status) VALUES (?, ?, ?)',
-      [requestedBy, text, 'Pending']
+      `INSERT INTO change_requests
+       (requested_by, text, status, course, new_day, new_time_slot)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        requestedBy,
+        text,
+        'Pending',
+        course,
+        newDay,
+        newTimeSlot
+      ]
     )
-    res.status(201).json({ id: result.insertId, requestedBy, text, status: 'Pending' })
+
+    res.status(201).json({
+      id: result.insertId,
+      requestedBy,
+      text,
+      status: 'Pending',
+      course,
+      newDay,
+      newTimeSlot
+    })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
+
 app.patch('/api/change-requests/:id', async (req, res) => {
   const { id } = req.params
   const { status } = req.body
+
+  if (!['Approved', 'Rejected'].includes(status)) {
+    return res.status(400).json({
+      error: 'Status must be Approved or Rejected'
+    })
+  }
+
   try {
-    await db.query('UPDATE change_requests SET status = ? WHERE id = ?', [status, id])
-    const [rows] = await db.query('SELECT * FROM change_requests WHERE id = ?', [id])
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Request not found' })
+    // Get the request
+    const [requestRows] = await db.query(
+      'SELECT * FROM change_requests WHERE id = ?',
+      [id]
+    )
+
+    if (requestRows.length === 0) {
+      return res.status(404).json({
+        error: 'Request not found'
+      })
     }
-    const r = rows[0]
-    res.json({ id: r.id, requestedBy: r.requested_by, text: r.text, status: r.status })
+
+    const request = requestRows[0]
+
+    // Already processed
+    if (request.status !== 'Pending') {
+      return res.status(400).json({
+        error: `Request is already ${request.status}`
+      })
+    }
+
+    // If rejected, simply update the request status
+    if (status === 'Rejected') {
+      await db.query(
+        'UPDATE change_requests SET status = ? WHERE id = ?',
+        ['Rejected', id]
+      )
+
+      return res.json({
+        id: request.id,
+        requestedBy: request.requested_by,
+        text: request.text,
+        status: 'Rejected',
+        course: request.course,
+        newDay: request.new_day,
+        newTimeSlot: request.new_time_slot
+      })
+    }
+
+    // Approval requires structured request details
+    if (!request.course || !request.new_day || !request.new_time_slot) {
+      return res.status(400).json({
+        error: 'This request does not contain course, day and time information. Please create a new request.'
+      })
+    }
+
+    // Find the current schedule entry for this course
+    const [scheduleRows] = await db.query(
+      'SELECT * FROM schedule WHERE course = ? LIMIT 1',
+      [request.course]
+    )
+
+    if (scheduleRows.length === 0) {
+      return res.status(404).json({
+        error: `Course "${request.course}" was not found in the current schedule`
+      })
+    }
+
+    const currentSchedule = scheduleRows[0]
+
+    // Check faculty or room clash at the requested new slot
+    const [clashes] = await db.query(
+      `SELECT * FROM schedule
+       WHERE day = ?
+       AND time_slot = ?
+       AND id != ?
+       AND (faculty = ? OR room = ?)`,
+      [
+        request.new_day,
+        request.new_time_slot,
+        currentSchedule.id,
+        currentSchedule.faculty,
+        currentSchedule.room
+      ]
+    )
+
+    if (clashes.length > 0) {
+      const clashMessages = clashes.map(c => {
+        const reasons = []
+
+        if (c.faculty === currentSchedule.faculty) {
+          reasons.push(`faculty ${c.faculty}`)
+        }
+
+        if (c.room === currentSchedule.room) {
+          reasons.push(`room ${c.room}`)
+        }
+
+        return `${c.course} (${reasons.join(' and ')})`
+      })
+
+      return res.status(409).json({
+        error: `Cannot approve request. Clash detected with: ${clashMessages.join(', ')}`
+      })
+    }
+
+    // Update the schedule
+    await db.query(
+      `UPDATE schedule
+       SET day = ?, time_slot = ?
+       WHERE id = ?`,
+      [
+        request.new_day,
+        request.new_time_slot,
+        currentSchedule.id
+      ]
+    )
+
+    // Also update the constraint so future schedule generation
+    // keeps the approved change
+    await db.query(
+      `UPDATE constraints_table
+       SET day = ?, time_slot = ?
+       WHERE course = ?`,
+      [
+        request.new_day,
+        request.new_time_slot,
+        request.course
+      ]
+    )
+
+    // Mark request as approved
+    await db.query(
+      'UPDATE change_requests SET status = ? WHERE id = ?',
+      ['Approved', id]
+    )
+
+    // Refresh latest clash details
+    const [allScheduleRows] = await db.query(
+      'SELECT * FROM schedule'
+    )
+
+    const formattedSchedule = allScheduleRows.map(s => ({
+      course: s.course,
+      faculty: s.faculty,
+      room: s.room,
+      day: s.day,
+      timeSlot: s.time_slot
+    }))
+
+    latestClashDetails = getClashPairs(formattedSchedule)
+
+    res.json({
+      id: request.id,
+      requestedBy: request.requested_by,
+      text: request.text,
+      status: 'Approved',
+      course: request.course,
+      newDay: request.new_day,
+      newTimeSlot: request.new_time_slot,
+      message: `Schedule updated successfully. ${request.course} moved to ${request.new_day}, ${request.new_time_slot}.`
+    })
+
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    console.error('Change request error:', err)
+    res.status(500).json({
+      error: err.message
+    })
   }
 })
+
 // ---------- Schedule Generation ----------
 app.post('/api/generate-schedule', async (req, res) => {
   try {
