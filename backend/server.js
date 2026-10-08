@@ -53,6 +53,94 @@ app.post('/api/constraints', async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+// Update Constraint
+app.put('/api/constraints/:id', async (req, res) => {
+  const { id } = req.params
+  const { course, faculty, room, day, timeSlot } = req.body
+
+  if (!course || !faculty || !room || !day || !timeSlot) {
+    return res.status(400).json({ error: 'All fields are required' })
+  }
+
+  try {
+    const [result] = await db.query(
+      `UPDATE constraints_table
+       SET course = ?, faculty = ?, room = ?, day = ?, time_slot = ?
+       WHERE id = ?`,
+      [course, faculty, room, day, timeSlot, id]
+    )
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Constraint not found' })
+    }
+
+    // Old generated schedule is no longer valid
+    await db.query('DELETE FROM schedule')
+
+    const [rows] = await db.query(
+      'SELECT * FROM constraints_table WHERE id = ?',
+      [id]
+    )
+
+    const r = rows[0]
+
+    res.json({
+      id: r.id,
+      course: r.course,
+      faculty: r.faculty,
+      room: r.room,
+      day: r.day,
+      timeSlot: r.time_slot
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
+// Delete One Constraint
+app.delete('/api/constraints/:id', async (req, res) => {
+  const { id } = req.params
+
+  try {
+    const [result] = await db.query(
+      'DELETE FROM constraints_table WHERE id = ?',
+      [id]
+    )
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Constraint not found' })
+    }
+
+    // Old generated schedule is no longer valid
+    await db.query('DELETE FROM schedule')
+
+    res.json({
+      success: true,
+      message: 'Constraint deleted successfully'
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+
+// Delete All Constraints
+app.delete('/api/constraints', async (req, res) => {
+  try {
+    await db.query('DELETE FROM constraints_table')
+
+    // Old generated schedule is no longer valid
+    await db.query('DELETE FROM schedule')
+
+    res.json({
+      success: true,
+      message: 'All constraints deleted successfully'
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 // ---------- Faculty ----------
 app.get('/api/faculty', async (req, res) => {
   try {
