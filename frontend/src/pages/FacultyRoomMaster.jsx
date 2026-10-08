@@ -30,13 +30,13 @@ function FacultyRoomMaster() {
 
   useEffect(() => {
     axios.get(`${API_URL}/api/faculty`).then(res => setFacultyList(res.data))
-axios.get(`${API_URL}/api/rooms`).then(res => setRoomList(res.data))
+    axios.get(`${API_URL}/api/rooms`).then(res => setRoomList(res.data))
   }, [])
 
   const addFaculty = async () => {
     if (!facultyName || !availability) { alert('Fill all fields'); return }
     try {
-      const res = await axios.post('http://localhost:5000/api/rooms', { roomNumber, capacity })
+      const res = await axios.post(`${API_URL}/api/faculty`, { facultyName, availability })
       setFacultyList([...facultyList, res.data])
       setFacultyName('')
       setAvailability('')
@@ -48,7 +48,7 @@ axios.get(`${API_URL}/api/rooms`).then(res => setRoomList(res.data))
   const addRoom = async () => {
     if (!roomNumber || !capacity) { alert('Fill all fields'); return }
     try {
-     const res = await axios.patch(`http://localhost:5000/api/rooms/${room.id}`, { active: !(room.active !== false) })
+      const res = await axios.post(`${API_URL}/api/rooms`, { roomNumber, capacity })
       setRoomList([...roomList, res.data])
       setRoomNumber('')
       setCapacity('')

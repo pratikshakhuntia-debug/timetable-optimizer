@@ -7,6 +7,7 @@ import BoltIcon from '@mui/icons-material/Bolt'
 import WarningIcon from '@mui/icons-material/Warning'
 import CloseIcon from '@mui/icons-material/Close'
 import axios from 'axios'
+import { API_URL } from '../config'
 
 function StatCard({ icon, iconBg, iconColor, label, value, valueColor, trend, trendColor, onClick }) {
   return (
@@ -42,7 +43,7 @@ function UtilizationDashboard() {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/clash-details').then(res => setClashDetails(res.data))
+    axios.get(`${API_URL}/api/clash-details`)
   }, [])
 
   const roomUtilization = [

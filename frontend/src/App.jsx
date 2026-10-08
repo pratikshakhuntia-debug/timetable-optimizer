@@ -132,7 +132,7 @@ const hasResults = searchResults.courses.length + searchResults.faculty.length +
 
 const handleBellClick = (e) => {
   setAnchorEl(e.currentTarget)
-  axios.get('http://localhost:5000/api/clash-details').then(res => setClashDetails(res.data))
+  axios.get(`${API_URL}/api/clash-details`)
 }
   return (
     <BrowserRouter>
